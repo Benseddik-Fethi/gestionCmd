@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,14 +27,7 @@ public class DishService {
         return dishRepository.findAll()
                 .stream()
                 .map(dish -> new DishDTO(dish.getId(), dish.getName(), dish.getPrice(), dish.isAvailable()))
-                .collect(Collectors.toList());
-    }
-
-    public List<DishDTO> getAvailableDishes() {
-        return dishRepository.findByAvailableTrue()
-                .stream()
-                .map(dish -> new DishDTO(dish.getId(), dish.getName(), dish.getPrice(), dish.isAvailable()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public DishDTO getDishById(UUID id) {
@@ -48,5 +40,12 @@ public class DishService {
         Dish dish = dishRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Plat avec ID " + id + " non trouvé"));
         dishRepository.delete(dish);
+    }
+
+    public List<DishDTO> getAvailableDishes() {
+        return dishRepository.findByAvailableTrue()
+                .stream()
+                .map(dish -> new DishDTO(dish.getId(), dish.getName(), dish.getPrice(), dish.isAvailable()))
+                .toList();
     }
 }

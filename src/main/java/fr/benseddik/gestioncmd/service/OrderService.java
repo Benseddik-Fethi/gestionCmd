@@ -29,29 +29,41 @@ public class OrderService {
     private final DishRepository dishRepository;
 
     public OrderResponseDTO placeOrder(OrderRequestDTO orderRequestDTO) {
+        // Vérifier si le client existe
         Client client = clientRepository.findById(orderRequestDTO.clientId())
                 .orElseThrow(() -> new ResourceNotFoundException("Client non trouvé"));
 
+        // Vérifier si la commande contient au moins un plat
         if (orderRequestDTO.items().isEmpty()) {
             throw new BusinessLogicException("Une commande doit contenir au moins un plat");
         }
 
+        // Créer la commande
         Order order = new Order(null, client, LocalDateTime.now(), 0, null);
         double totalPrice = 0;
         List<OrderItem> items = new ArrayList<>();
 
+        // Parcourir les articles de la commande
         for (OrderItemDTO itemDTO : orderRequestDTO.items()) {
             Dish dish = dishRepository.findById(itemDTO.dishId())
                     .orElseThrow(() -> new ResourceNotFoundException("Plat non trouvé"));
 
-            totalPrice += dish.getPrice() * itemDTO.quantity(); // ✅ Modification autorisée
+            // Vérifier la disponibilité du plat
+            if (!dish.isAvailable()) {
+                throw new BusinessLogicException("Le plat " + dish.getName() + " n'est plus disponible.");
+            }
+
+            // Calculer le prix total et ajouter l'article à la commande
+            totalPrice += dish.getPrice() * itemDTO.quantity();
             items.add(new OrderItem(null, order, dish, itemDTO.quantity()));
         }
 
+        // Sauvegarder la commande
         order.setItems(items);
         order.setTotalPrice(totalPrice);
         Order savedOrder = orderRepository.save(order);
 
+        // Retourner une réponse DTO
         return new OrderResponseDTO(
                 savedOrder.getId(),
                 savedOrder.getClient().getId(),

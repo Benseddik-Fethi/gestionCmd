@@ -6,6 +6,7 @@ import fr.benseddik.gestioncmd.domain.Order;
 import fr.benseddik.gestioncmd.domain.OrderItem;
 import fr.benseddik.gestioncmd.dto.OrderItemDTO;
 import fr.benseddik.gestioncmd.dto.OrderRequestDTO;
+import fr.benseddik.gestioncmd.exception.BusinessLogicException;
 import fr.benseddik.gestioncmd.exception.ResourceNotFoundException;
 import fr.benseddik.gestioncmd.repository.ClientRepository;
 import fr.benseddik.gestioncmd.repository.DishRepository;
@@ -42,7 +43,6 @@ class OrderServiceTest {
     private UUID dishId;
     private Client client;
     private Dish dish;
-    private Order savedOrder;
 
     @BeforeEach
     void setUp() {
@@ -51,11 +51,6 @@ class OrderServiceTest {
         dishId = UUID.randomUUID();
         client = new Client(clientId, "Alice Dupont", "alice@example.com", "0601020304", null);
         dish = new Dish(dishId, "Pizza Margherita", 12.50, true);
-        savedOrder = new Order(); // Instanciation de l'objet Order
-        savedOrder.setId(UUID.randomUUID()); // Donne un ID unique à l'objet
-        savedOrder.setClient(client); // Associe un client
-        savedOrder.setItems(List.of(new OrderItem())); // Ajoute des items à la commande (si nécessaire)
-        savedOrder.setTotalPrice(10.0);
     }
 
     @Test
@@ -64,11 +59,18 @@ class OrderServiceTest {
 
         when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
         when(dishRepository.findById(dishId)).thenReturn(Optional.of(dish));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Mock de la sauvegarde de l'objet Order
-        when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
-        // Exécution du test, on vérifie qu'aucune exception n'est lancée
         assertDoesNotThrow(() -> orderService.placeOrder(orderRequest));
+    }
+
+    @Test
+    void testPlaceOrder_EmptyOrder() {
+        OrderRequestDTO orderRequest = new OrderRequestDTO(clientId, List.of());
+
+        when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
+
+        assertThrows(BusinessLogicException.class, () -> orderService.placeOrder(orderRequest));
     }
 
     @Test
@@ -88,5 +90,27 @@ class OrderServiceTest {
         when(dishRepository.findById(dishId)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> orderService.placeOrder(orderRequest));
+    }
+
+    @Test
+    void testPlaceOrder_DishNotAvailable() {
+        dish.setAvailable(false);
+        OrderRequestDTO orderRequest = new OrderRequestDTO(clientId, List.of(new OrderItemDTO(dishId, 2)));
+
+        when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
+        when(dishRepository.findById(dishId)).thenReturn(Optional.of(dish));
+
+        assertThrows(BusinessLogicException.class, () -> orderService.placeOrder(orderRequest));
+    }
+
+    @Test
+    void testPlaceOrder_OrderSaveFails() {
+        OrderRequestDTO orderRequest = new OrderRequestDTO(clientId, List.of(new OrderItemDTO(dishId, 2)));
+
+        when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
+        when(dishRepository.findById(dishId)).thenReturn(Optional.of(dish));
+        when(orderRepository.save(any(Order.class))).thenThrow(new RuntimeException("Erreur lors de l'enregistrement"));
+
+        assertThrows(RuntimeException.class, () -> orderService.placeOrder(orderRequest));
     }
 }

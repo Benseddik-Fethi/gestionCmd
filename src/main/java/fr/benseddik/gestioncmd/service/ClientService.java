@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,12 +29,12 @@ public class ClientService {
         return clientRepository.findAll()
                 .stream()
                 .map(client -> new ClientDTO(client.getId(), client.getName(), client.getEmail(), client.getPhone()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public ClientDTO getClientById(UUID id) {
-        Client client = clientRepository.findById(id)
+        return clientRepository.findById(id)
+                .map(client -> new ClientDTO(client.getId(), client.getName(), client.getEmail(), client.getPhone()))
                 .orElseThrow(() -> new ResourceNotFoundException("Client avec ID " + id + " non trouvé"));
-        return new ClientDTO(client.getId(), client.getName(), client.getEmail(), client.getPhone());
     }
 }

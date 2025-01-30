@@ -18,39 +18,34 @@ public class DishController {
 
     private final DishService dishService;
 
-
     @PostMapping
     public ResponseEntity<DishDTO> createDish(@Valid @RequestBody DishDTO dishDTO) {
-        return ResponseEntity.ok(dishService.createDish(dishDTO));
+        DishDTO createdDish = dishService.createDish(dishDTO);
+        return ResponseEntity.ok(createdDish);
     }
 
     @GetMapping
     public ResponseEntity<List<DishDTO>> getAllDishes() {
-        return ResponseEntity.ok(dishService.getAllDishes());
+        List<DishDTO> dishes = dishService.getAllDishes();
+        return ResponseEntity.ok(dishes);
     }
 
     @GetMapping("/available")
     public ResponseEntity<List<DishDTO>> getAvailableDishes() {
-        return ResponseEntity.ok(dishService.getAvailableDishes());
+        List<DishDTO> availableDishes = dishService.getAvailableDishes();
+        return ResponseEntity.ok(availableDishes);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<DishDTO> getDishById(@PathVariable UUID id) {
-        try {
-            return ResponseEntity.ok(dishService.getDishById(id));
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        DishDTO dishDTO = dishService.getDishById(id);
+        return ResponseEntity.ok(dishDTO);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDish(@PathVariable UUID id) {
-        try {
-            dishService.deleteDish(id);
-            return ResponseEntity.noContent().build();
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        dishService.deleteDish(id);
+        return ResponseEntity.noContent().build();
     }
 }
 

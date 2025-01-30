@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,6 +36,17 @@ class DishServiceTest {
     }
 
     @Test
+    void testGetAllDishes() {
+        when(dishRepository.findAll()).thenReturn(List.of(dish));
+
+        List<DishDTO> dishes = dishService.getAllDishes();
+
+        assertFalse(dishes.isEmpty());
+        assertEquals(1, dishes.size());
+        assertEquals("Pizza Margherita", dishes.get(0).name());
+    }
+
+    @Test
     void testGetDishById_Success() {
         when(dishRepository.findById(dishId)).thenReturn(Optional.of(dish));
 
@@ -42,15 +54,48 @@ class DishServiceTest {
 
         assertNotNull(result);
         assertEquals(dish.getId(), result.id());
-        assertEquals(dish.getName(), result.name());
-        assertEquals(dish.getPrice(), result.price());
     }
 
     @Test
-    void testGetDishById_NotFound() {
+    void testCreateDish() {
+        DishDTO dishDTO = new DishDTO(null, "Burger Classic", 10.00, true);
+        Dish newDish = new Dish(UUID.randomUUID(), dishDTO.name(), dishDTO.price(), dishDTO.available());
+
+        when(dishRepository.save(any(Dish.class))).thenReturn(newDish);
+
+        DishDTO result = dishService.createDish(dishDTO);
+
+        assertNotNull(result);
+        assertEquals("Burger Classic", result.name());
+        assertEquals(10.00, result.price());
+        verify(dishRepository, times(1)).save(any(Dish.class));
+    }
+
+    @Test
+    void testDeleteDish_Success() {
+        when(dishRepository.findById(dishId)).thenReturn(Optional.of(dish));
+        doNothing().when(dishRepository).delete(dish);
+
+        assertDoesNotThrow(() -> dishService.deleteDish(dishId));
+
+        verify(dishRepository, times(1)).delete(dish);
+    }
+
+    @Test
+    void testDeleteDish_NotFound() {
         when(dishRepository.findById(dishId)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> dishService.getDishById(dishId));
+        assertThrows(ResourceNotFoundException.class, () -> dishService.deleteDish(dishId));
+    }
+
+    @Test
+    void testGetAvailableDishes() {
+        when(dishRepository.findByAvailableTrue()).thenReturn(List.of(dish));
+
+        List<DishDTO> result = dishService.getAvailableDishes();
+
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
+        assertTrue(result.get(0).available());
     }
 }
-

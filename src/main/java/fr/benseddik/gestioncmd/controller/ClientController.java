@@ -18,7 +18,6 @@ public class ClientController {
 
     private final ClientService clientService;
 
-
     @PostMapping
     public ResponseEntity<ClientDTO> createClient(@Valid @RequestBody ClientDTO clientDTO) {
         return ResponseEntity.ok(clientService.createClient(clientDTO));
@@ -31,10 +30,6 @@ public class ClientController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ClientDTO> getClientById(@PathVariable UUID id) {
-        try {
-            return ResponseEntity.ok(clientService.getClientById(id));
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(clientService.getClientById(id));
     }
 }
